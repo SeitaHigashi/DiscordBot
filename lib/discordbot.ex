@@ -21,26 +21,20 @@ defmodule ExampleConsumer do
   end
 
   def handle_event({:MESSAGE_CREATE, {msg}, _ws_state}, state) do
-    case msg.content do
-      # In general, you don't want to match using the binary notation, but I'm
-      # doing it here to be explicit
-      # <<"!" :: binary, "ping" :: binary>> ->
-      "!ping" ->
-        Api.create_message(msg.channel_id, "I copy and pasted this code")
-
-      n when n in ["Hello", "Good morning", "Good night"] ->
+    if keyword_match(msg, Application.get_env(:nostrum, :exactmatch, [])) do
         Api.create_message(msg.channel_id, msg.content <> "! " <> msg.author.username)
-
-      _ ->
-        :ignore
     end
 
     {:ok, state}
   end
 
-  # Default event handler, if you don't include this, your consumer WILL crash if
-  # you don't have a method definition for each event type.
   def handle_event(_, state) do
     {:ok, state}
   end
+
+  def keyword_match(msg, env) do
+    message = msg.content |> String.downcase
+    Enum.find_value(env, false, fn key -> String.downcase(key) == message end)
+  end
+
 end
