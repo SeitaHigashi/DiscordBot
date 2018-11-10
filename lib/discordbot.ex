@@ -21,8 +21,12 @@ defmodule ExampleConsumer do
   end
 
   def handle_event({:MESSAGE_CREATE, {msg}, _ws_state}, state) do
-    if keyword_match(msg, Application.get_env(:nostrum, :exactmatch, [])) do
+    {_,%{ "id" => current_id }} = Api.get_current_user()
+    if msg.author.id != current_id do
+      #message = msg.content |> String.split(" ")
+      if keyword_match(msg, Application.get_env(:nostrum, :exactmatch, [])) do
         Api.create_message(msg.channel_id, msg.content <> "! " <> msg.author.username)
+      end
     end
 
     {:ok, state}
