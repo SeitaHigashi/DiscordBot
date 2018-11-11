@@ -16,16 +16,24 @@ defmodule ExampleConsumer do
 
   require Logger
 
+
   def start_link do
     Consumer.start_link(__MODULE__)
   end
 
   def handle_event({:MESSAGE_CREATE, {msg}, _ws_state}, state) do
+    botname = Application.get_env(:nostrum, :botname, "Elix")
     {_,%{ "id" => current_id }} = Api.get_current_user()
     if msg.author.id != current_id do
-      #message = msg.content |> String.split(" ")
-      if keyword_match(msg, Application.get_env(:nostrum, :exactmatch, [])) do
-        Api.create_message(msg.channel_id, msg.content <> "! " <> msg.author.username)
+      message = msg.content |> String.split(" ")
+      case message do
+      [^botname | command ] ->
+        Api.create_message(msg.channel_id, commandresponse(command))
+      [_] ->
+        if keyword_match(msg, Application.get_env(:nostrum, :exactmatch, [])) do
+          Api.create_message(msg.channel_id, msg.content <> "! " <> msg.author.username)
+        end
+      _ -> :ignore
       end
     end
 
@@ -34,6 +42,12 @@ defmodule ExampleConsumer do
 
   def handle_event(_, state) do
     {:ok, state}
+  end
+
+  def commandresponse(msg) do
+    case msg do
+      ["get_token" | _] -> Api.get_token
+    end
   end
 
   def keyword_match(msg, env) do
